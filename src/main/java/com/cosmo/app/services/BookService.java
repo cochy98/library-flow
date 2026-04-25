@@ -1,50 +1,49 @@
 package com.cosmo.app.services;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import com.cosmo.app.models.Book;
+import com.cosmo.app.repositories.BookRepository;
 
 public class BookService {
-    // Questo è lo "stato" del servizio: la tua lista di libri
-    private List<Book> books;
+    private final BookRepository repository;
 
-    // Il costruttore serve a inizializzare la lista appena crei il servizio
-    public BookService() {
-        this.books = new ArrayList<>();
+    public BookService(BookRepository repository) {
+        this.repository = repository;
     }
 
     // Metodo per aggiungere
     public void addBook(Book book) {
-        this.books.add(book);
+        // Todo aggiungere i controlli prima del salvataggio
+        repository.save(book);
     }
 
     // public List<Book> findBooksByTitle(String title) {
     // }
 
-    public List<Book> findBooksByAuthor(String author) {
-        return books.stream().filter(b -> b.getAuthor().equals(author)).toList();
+    public Optional<Book> findBook(String isbn) {
+        return repository.findByIsbn(isbn);
     }
 
-    public Optional<Book> findBook(String isbn) {
-        return books.stream()
-                .filter(b -> isbn.equals(b.getIsbn()))
-                .findFirst();
+    public List<Book> findBooksByAuthor(String author) {
+        return repository.findByAuthor(author);
     }
 
     public boolean removeBook(String isbn) {
-        return books.removeIf(b -> b.getIsbn().equals(isbn));
+        Book book = repository.findByIsbn(isbn)
+                .orElseThrow(() -> new IllegalArgumentException("Libro non trovato!"));
+
+        return repository.delete(book);
     }
 
     public List<Book> getAll() {
-        return List.copyOf(books);
+        return repository.findAll();
     }
 
-    public List<Book> getBookAvailable() {
-        return books.stream()
+    public List<Book> getAvailableBooks() {
+        return repository.findAll().stream()
                 .filter(Book::isAvailable)
                 .toList();
     }
-
 }

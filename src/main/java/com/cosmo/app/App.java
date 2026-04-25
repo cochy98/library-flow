@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import com.cosmo.app.models.Book;
 import com.cosmo.app.models.User;
+import com.cosmo.app.repositories.InMemoryBookRepository;
 import com.cosmo.app.repositories.InMemoryUserRepository;
 import com.cosmo.app.services.BookService;
 import com.cosmo.app.services.UserService;
@@ -15,7 +16,7 @@ import com.cosmo.app.services.UserService;
  */
 public class App {
     UserService userService = new UserService(new InMemoryUserRepository());
-    BookService bookService = new BookService();
+    BookService bookService = new BookService(new InMemoryBookRepository());
 
     public static void main(String[] args) {
         App app = new App();
