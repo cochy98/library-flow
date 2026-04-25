@@ -2,7 +2,7 @@ package com.cosmo.app.models;
 
 import java.util.Objects;
 
-public class User extends Item {
+public class User {
     private String name;
     private String surname;
     private String email;

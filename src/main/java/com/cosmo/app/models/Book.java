@@ -4,31 +4,31 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class Book {
-    private String isbn;
+    private final String isbn;
     private String title;
     private String author;
     private String genre;
-    private int pubblicationYear;
+    private int publicationYear;
     private double price;
     private int availableCopies;
 
-    public Book(String isbn, String title, String author, String genre, int pubblicationYear, double price,
+    public Book(String isbn, String title, String author, String genre, int publicationYear, double price,
             int availableCopies) {
         this.isbn = isbn;
         this.title = title;
         this.author = author;
         this.genre = genre;
-        this.pubblicationYear = pubblicationYear;
+        this.publicationYear = publicationYear;
         this.price = price;
         this.availableCopies = availableCopies;
     }
 
-    public Book(String title, String author, int pubblicationYear) {
+    public Book(String title, String author, int publicationYear) {
         this.isbn = UUID.randomUUID().toString();
         this.title = title;
         this.author = author;
         this.genre = "NC";
-        this.pubblicationYear = pubblicationYear;
+        this.publicationYear = publicationYear;
         this.price = 0;
         this.availableCopies = 1;
     }
@@ -50,8 +50,8 @@ public class Book {
         return genre;
     }
 
-    public int getPubblicationYear() {
-        return pubblicationYear;
+    public int getPublicationYear() {
+        return publicationYear;
     }
 
     public double getPrice() {
@@ -63,10 +63,6 @@ public class Book {
     }
 
     // Setter
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
-    }
-
     public void setTitle(String title) {
         this.title = title;
     }
@@ -79,8 +75,8 @@ public class Book {
         this.genre = genre;
     }
 
-    public void setPubblicationYear(int pubblicationYear) {
-        this.pubblicationYear = pubblicationYear;
+    public void setPublicationYear(int publicationYear) {
+        this.publicationYear = publicationYear;
     }
 
     public void setPrice(double price) {
@@ -91,13 +87,25 @@ public class Book {
         this.availableCopies = availableCopies;
     }
 
+    public void decrementAvailableCopies() {
+        availableCopies -= 1;
+    }
+
+    public void incrementAvailableCopies() {
+        availableCopies += 1;
+    }
+
+    public boolean isAvailable() {
+        return availableCopies >= 1;
+    }
+
     @Override
     public String toString() {
         return "Isbn: " + isbn + "\n" +
                 "Titolo: " + title + "\n" +
                 "Autore: " + author + "\n" +
                 "Genere: " + genre + "\n" +
-                "Anno pubblicazione: " + pubblicationYear + "\n" +
+                "Anno pubblicazione: " + publicationYear + "\n" +
                 "Prezzo: " + price + "\n" +
                 "Copie disponibili: " + availableCopies;
     }
