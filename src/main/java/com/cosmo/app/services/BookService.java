@@ -35,10 +35,22 @@ public class BookService {
         this.repository = repository;
     }
 
-    // Aggiunge un libro al repository. Il Todo indica che qui mancano ancora
-    // validazioni (es. titolo non vuoto, anno valido, ecc.)
+    /**
+     * Aggiunge un libro dopo aver validato i campi obbligatori.
+     *
+     * La validazione avviene nel service (non nel modello né nel repository)
+     * perché è una regola di business: "un libro deve avere titolo, autore,
+     * genere e un anno valido". Il modello Book non ha opinioni su questo;
+     * il repository sa solo come salvare.
+     *
+     * publicationYear <= 0 esclude anni fisicamente impossibili.
+     * isBlank() controlla sia stringhe vuote ("") che stringhe di soli spazi (" ").
+     */
     public void addBook(Book book) {
-        // Todo aggiungere i controlli prima del salvataggio
+        if (book.getTitle().isBlank() || book.getAuthor().isBlank() || book.getGenre().isBlank() || book.getPublicationYear() <= 0) {
+            throw new IllegalArgumentException("Campi obbligatori o non validi!");
+        }
+
         repository.save(book);
     }
 

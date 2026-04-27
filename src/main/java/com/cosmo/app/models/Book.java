@@ -43,7 +43,23 @@ public class Book {
     }
 
     /**
-     * Costruttore semplificato: genera l'ISBN automaticamente con UUID.
+     * Costruttore intermedio: genera l'ISBN automaticamente ma accetta il genere.
+     * Si colloca tra il costruttore completo (che vuole tutto) e quello minimale
+     * (che imposta genere = "NC"). Utile quando il genere è noto al momento
+     * della creazione ma prezzo e copie possono restare ai valori di default.
+     */
+    public Book(String title, String author, String genre, int publicationYear) {
+        this.isbn = UUID.randomUUID().toString();
+        this.title = title;
+        this.author = author;
+        this.genre = genre;
+        this.publicationYear = publicationYear;
+        this.price = 0;
+        this.availableCopies = 1;
+    }
+
+    /**
+     * Costruttore minimale: genera l'ISBN automaticamente con UUID.
      *
      * CONSTRUCTOR OVERLOADING: Java permette più costruttori con firme diverse.
      * Questo pattern è utile per offrire comodità senza duplicare logica.

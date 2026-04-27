@@ -46,6 +46,10 @@ public class DataSeeder {
                 new User("Marco", "Amerigo", "marcoamerigo@test.com")
             );
 
+        // forEach con lambda: equivalente al classico for-each ma in stile funzionale.
+        // Nota: qui si potrebbe usare il method reference "userService::addUser"
+        // (forma ancora più compatta), ma la lambda esplicita è più leggibile per chi
+        // incontra questo stile per la prima volta.
         users.forEach(u -> userService.addUser(u));
     }
 

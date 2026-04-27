@@ -9,6 +9,7 @@ import com.cosmo.app.repositories.InMemoryBookRepository;
 import com.cosmo.app.repositories.InMemoryUserRepository;
 import com.cosmo.app.services.BookService;
 import com.cosmo.app.services.UserService;
+import com.cosmo.app.utils.InputUtils;
 
 /**
  * Classe principale dell'applicazione library-flow.
@@ -34,7 +35,7 @@ public class App {
      * Punto di ingresso dell'applicazione (entry point).
      *
      * La JVM cerca sempre un metodo con questa firma esatta:
-     *   public static void main(String[] args)
+     * public static void main(String[] args)
      * "static" è necessario perché la JVM lo chiama senza istanziare la classe.
      *
      * Qui avviene il "wiring" manuale: creiamo le implementazioni concrete
@@ -99,7 +100,7 @@ public class App {
                         addUser(scanner);
                         break;
                     case '2':
-                        addBook();
+                        addBook(scanner);
                         break;
                     case '3':
                         printUsers();
@@ -195,7 +196,8 @@ public class App {
     /**
      * ifPresentOrElse(): metodo di Optional che gestisce entrambi i casi in
      * un'unica chiamata:
-     * - se l'Optional contiene un valore, esegue il primo Consumer (stampa l'utente)
+     * - se l'Optional contiene un valore, esegue il primo Consumer (stampa
+     * l'utente)
      * - altrimenti esegue il Runnable (stampa "non trovato")
      * È più espressivo di if (optional.isPresent()) { ... } else { ... }
      */
@@ -218,13 +220,39 @@ public class App {
                 .forEach(entry -> System.out.println(entry + "\n"));
     }
 
-    private void addBook() {
-        // Todo: raccogliere i dati dal menu (titolo, autore, anno)
-        System.out.println("Inserimento libro in corso...");
-        Book book = new Book("Guardiani della galassia", "Autore Sconosciuto", 1999);
-        bookService.addBook(book);
-        System.out.println("Libro aggiunto con successo!");
-        System.out.println(book + "\n");
+    /**
+     * Raccoglie i dati del libro da tastiera e lo aggiunge tramite il service.
+     *
+     * InputUtils.readInt() è un metodo statico di utilità: gestisce il caso in cui
+     * l'utente inserisca un valore non numerico, ripetendo la richiesta finché
+     * l'input non è valido. Questa logica è stata estratta qui perché potrebbe
+     * servire in più punti dell'applicazione (DRY: Don't Repeat Yourself).
+     *
+     * Il try/catch intercetta le validazioni fallite lanciate da BookService,
+     * mostrando il messaggio di errore senza far crashare il programma.
+     */
+    private void addBook(Scanner scanner) {
+        System.out.println("\nInserimento libro");
+
+        System.out.print("Titolo: ");
+        String title = scanner.nextLine().trim();
+
+        System.out.print("Autore: ");
+        String author = scanner.nextLine().trim();
+
+        System.out.print("Genere: ");
+        String genre = scanner.nextLine().trim();
+
+        int publicationYear = InputUtils.readInt(scanner, "Anno di pubblicazione: ");
+
+        try {
+            Book book = new Book(title, author, genre, publicationYear);
+            bookService.addBook(book);
+            System.out.println("Libro aggiunto con successo!");
+            System.out.println(book + "\n");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Errore: " + e.getMessage() + "\n");
+        }
     }
 
     // private void removeBook() {
