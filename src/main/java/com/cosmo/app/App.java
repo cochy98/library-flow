@@ -10,7 +10,18 @@ import com.cosmo.app.repositories.InMemoryUserRepository;
 import com.cosmo.app.services.BookService;
 import com.cosmo.app.services.UserService;
 
+/**
+ * Classe principale dell'applicazione library-flow.
+ *
+ * Contiene il metodo main() (punto di ingresso JVM) e gestisce il menu
+ * di navigazione da console. Tiene i riferimenti ai service e delega
+ * tutta la logica di business a essi.
+ */
 public class App {
+
+    // I service sono campi d'istanza: ogni oggetto App ha i propri service.
+    // "final" garantisce che i riferimenti non vengano mai riassegnati dopo
+    // la costruzione, rendendo l'oggetto più prevedibile.
     private final UserService userService;
     private final BookService bookService;
 
@@ -19,15 +30,40 @@ public class App {
         this.bookService = bookService;
     }
 
+    /**
+     * Punto di ingresso dell'applicazione (entry point).
+     *
+     * La JVM cerca sempre un metodo con questa firma esatta:
+     *   public static void main(String[] args)
+     * "static" è necessario perché la JVM lo chiama senza istanziare la classe.
+     *
+     * Qui avviene il "wiring" manuale: creiamo le implementazioni concrete
+     * e le iniettiamo nei service. In framework come Spring questo viene fatto
+     * automaticamente dall'IoC Container.
+     */
     public static void main(String[] args) {
         UserService userService = new UserService(new InMemoryUserRepository());
         BookService bookService = new BookService(new InMemoryBookRepository());
 
+        // Il seeder popola il sistema con dati di esempio prima di avviare il menu
         new DataSeeder(bookService, userService).seed();
 
+        // Creiamo l'istanza di App e avviamo il menu: da qui in poi tutto è
+        // gestito tramite metodi d'istanza (non static)
         new App(userService, bookService).navigationMenu();
     }
 
+    /**
+     * Loop principale del menu di navigazione.
+     *
+     * TRY-WITH-RESOURCES: la sintassi "try (Scanner scanner = ...)" garantisce
+     * che lo Scanner venga chiuso automaticamente al termine del blocco, anche
+     * in caso di eccezione. È obbligatorio per qualsiasi risorsa che implementa
+     * AutoCloseable (file, connessioni di rete, stream, ecc.).
+     *
+     * Il flag "running" controlla il ciclo: quando l'utente preme 0, diventa
+     * false e il while termina in modo pulito.
+     */
     private void navigationMenu() {
         System.out.println("Benvenuto in libreria da cochy!\n");
         help();
@@ -35,6 +71,7 @@ public class App {
         try (Scanner scanner = new Scanner(System.in)) {
             boolean running = true;
             while (running) {
+                // Gestisce EOF (es. input reindirizzato da file o pipe)
                 if (!scanner.hasNextLine()) {
                     System.out.println("Input terminato. Uscita.");
                     break;
@@ -42,10 +79,21 @@ public class App {
 
                 String input = scanner.nextLine().trim();
                 if (input.isEmpty()) {
-                    continue;
+                    continue; // salta le righe vuote e torna all'inizio del while
                 }
+
+                // Prendiamo solo il primo carattere: l'utente può digitare "1 " o "1abc"
+                // e il programma leggerà comunque '1'
                 char carattere = input.charAt(0);
 
+                /**
+                 * SWITCH STATEMENT: scelta tra più casi in base al valore di una variabile.
+                 * È più leggibile di una lunga catena if/else if quando i casi sono discreti.
+                 * "break" è necessario per uscire dal case: senza di esso Java esegue
+                 * anche tutti i case successivi ("fall-through"), comportamento quasi
+                 * sempre indesiderato.
+                 * Il case "default" gestisce qualsiasi valore non previsto.
+                 */
                 switch (carattere) {
                     case '1':
                         addUser(scanner);
@@ -82,6 +130,12 @@ public class App {
         }
     }
 
+    /**
+     * TEXT BLOCK (Java 15+): la sintassi con triple virgolette """ permette
+     * di scrivere stringhe multiriga senza concatenazioni o \n espliciti.
+     * Il testo viene allineato automaticamente in base all'indentazione.
+     * "\t" è il carattere di tabulazione.
+     */
     private static void help() {
         String helpString = """
                 HELP MENU:
@@ -96,12 +150,26 @@ public class App {
         System.out.println(helpString);
     }
 
+    /**
+     * forEach con method reference: users.forEach(System.out::println)
+     * è equivalente a: for (User u : users) { System.out.println(u); }
+     * Il method reference System.out::println è più conciso e sfrutta
+     * il toString() che abbiamo definito in User.
+     */
     private void printUsers() {
         System.out.println("Tutti gli utenti:");
         List<User> users = userService.getAllUsers();
         users.forEach(System.out::println);
     }
 
+    /**
+     * Raccoglie i dati dell'utente da tastiera e li passa al service.
+     *
+     * TRY/CATCH: cattura l'IllegalArgumentException che UserService lancia
+     * in caso di validazione fallita (campo vuoto o email duplicata).
+     * Grazie a questa separazione, la UI non conosce le regole di business:
+     * sa solo che se riceve un'eccezione deve mostrare il messaggio di errore.
+     */
     private void addUser(Scanner scanner) {
         System.out.println("\nInserimento utente");
 
@@ -124,6 +192,13 @@ public class App {
         }
     }
 
+    /**
+     * ifPresentOrElse(): metodo di Optional che gestisce entrambi i casi in
+     * un'unica chiamata:
+     * - se l'Optional contiene un valore, esegue il primo Consumer (stampa l'utente)
+     * - altrimenti esegue il Runnable (stampa "non trovato")
+     * È più espressivo di if (optional.isPresent()) { ... } else { ... }
+     */
     private void printUser(Scanner scanner) {
         System.out.print("Inserisci email: ");
         String email = scanner.nextLine().trim();
@@ -144,7 +219,7 @@ public class App {
     }
 
     private void addBook() {
-        // Todo: raccogliere i dati dal menu
+        // Todo: raccogliere i dati dal menu (titolo, autore, anno)
         System.out.println("Inserimento libro in corso...");
         Book book = new Book("Guardiani della galassia", "Autore Sconosciuto", 1999);
         bookService.addBook(book);
