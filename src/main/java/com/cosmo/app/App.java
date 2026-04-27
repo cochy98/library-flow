@@ -1,7 +1,6 @@
 package com.cosmo.app;
 
 import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
 
 import com.cosmo.app.models.Book;
@@ -11,25 +10,22 @@ import com.cosmo.app.repositories.InMemoryUserRepository;
 import com.cosmo.app.services.BookService;
 import com.cosmo.app.services.UserService;
 
-/**
- * Hello world!
- */
 public class App {
-    UserService userService = new UserService(new InMemoryUserRepository());
-    BookService bookService = new BookService(new InMemoryBookRepository());
+    private final UserService userService;
+    private final BookService bookService;
+
+    public App(UserService userService, BookService bookService) {
+        this.userService = userService;
+        this.bookService = bookService;
+    }
 
     public static void main(String[] args) {
-        App app = new App();
+        UserService userService = new UserService(new InMemoryUserRepository());
+        BookService bookService = new BookService(new InMemoryBookRepository());
 
-        // Inizializzo gli utenti
-        app.initUsers();
+        new DataSeeder(bookService, userService).seed();
 
-        // Inizializzo i libri
-        app.initBooks();
-
-        // Apro il menu
-        app.navigationMenu();
-
+        new App(userService, bookService).navigationMenu();
     }
 
     private void navigationMenu() {
@@ -100,10 +96,6 @@ public class App {
         System.out.println(helpString);
     }
 
-    private void initUsers() {
-        userService.addUser(new User("Pinco", "Pallino", "pincopallino@test.com"));
-    }
-
     private void printUsers() {
         System.out.println("Tutti gli utenti:");
         List<User> users = userService.getAllUsers();
@@ -141,50 +133,8 @@ public class App {
         }
 
         userService.getUser(email).ifPresentOrElse(
-            System.out::println,
-            () -> System.out.println("Utente non trovato.\n")
-        );
-    }
-
-    private void initBooks() {
-        String[] bookTitles = {
-                "Ombre Vive",
-                "Cuore Nero",
-                "Luce Spenta",
-                "Senza Nome",
-                "Ultimo Respiro",
-                "Vento Freddo",
-                "Anime Perse",
-                "Oltre il Buio",
-                "Tempo Spezzato",
-                "Filo Invisibile"
-        };
-
-        String[] authors = {
-                "Italo Calvino",
-                "Umberto Eco",
-                "Elsa Morante",
-                "Alessandro Manzoni",
-                "Dante Alighieri",
-                "Primo Levi",
-                "Virginia Woolf",
-                "George Orwell",
-                "Jane Austen",
-                "Haruki Murakami"
-        };
-
-        int[] availableYears = { 1980, 1993, 2001, 2007, 1996, 2013, 2025, 2022, 2011 };
-
-        Random rand = new Random();
-
-        // for (String title : bookTitles) {
-        for (int i = 0; i < bookTitles.length; i++) {
-            String title = bookTitles[i];
-            String author = authors[i];
-            int index = rand.nextInt(availableYears.length);
-            int year = availableYears[index];
-            bookService.addBook(new Book(title, author, year));
-        }
+                System.out::println,
+                () -> System.out.println("Utente non trovato.\n"));
     }
 
     private void printBooks() {
@@ -194,12 +144,12 @@ public class App {
     }
 
     private void addBook() {
-        // Todo per adesso aggiungo un libro statico
+        // Todo: raccogliere i dati dal menu
         System.out.println("Inserimento libro in corso...");
         Book book = new Book("Guardiani della galassia", "Autore Sconosciuto", 1999);
         bookService.addBook(book);
         System.out.println("Libro aggiunto con successo!");
-        System.out.println(book.toString() + "\n");
+        System.out.println(book + "\n");
     }
 
     // private void removeBook() {
