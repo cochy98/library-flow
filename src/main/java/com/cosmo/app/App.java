@@ -1,7 +1,6 @@
 package com.cosmo.app;
 
 import java.util.List;
-import java.util.Scanner;
 
 import com.cosmo.app.models.Book;
 import com.cosmo.app.models.User;
@@ -9,7 +8,9 @@ import com.cosmo.app.repositories.InMemoryBookRepository;
 import com.cosmo.app.repositories.InMemoryUserRepository;
 import com.cosmo.app.services.BookService;
 import com.cosmo.app.services.UserService;
-import com.cosmo.app.utils.InputUtils;
+import com.cosmo.app.utils.ConsoleReader;
+import com.cosmo.app.utils.InputReader;
+
 
 /**
  * Classe principale dell'applicazione library-flow.
@@ -25,11 +26,14 @@ public class App {
     // la costruzione, rendendo l'oggetto più prevedibile.
     private final UserService userService;
     private final BookService bookService;
+    private final InputReader reader;
 
-    public App(UserService userService, BookService bookService) {
+    public App(UserService userService, BookService bookService, InputReader reader) {
         this.userService = userService;
         this.bookService = bookService;
+        this.reader = reader;
     }
+
 
     /**
      * Punto di ingresso dell'applicazione (entry point).
@@ -51,16 +55,17 @@ public class App {
 
         // Creiamo l'istanza di App e avviamo il menu: da qui in poi tutto è
         // gestito tramite metodi d'istanza (non static)
-        new App(userService, bookService).navigationMenu();
+        try (InputReader reader = new ConsoleReader()) {
+            new App(userService, bookService, reader).navigationMenu();
+        }
     }
 
     /**
      * Loop principale del menu di navigazione.
      *
-     * TRY-WITH-RESOURCES: la sintassi "try (Scanner scanner = ...)" garantisce
-     * che lo Scanner venga chiuso automaticamente al termine del blocco, anche
-     * in caso di eccezione. È obbligatorio per qualsiasi risorsa che implementa
-     * AutoCloseable (file, connessioni di rete, stream, ecc.).
+     * Non apre più risorse qui: lo Scanner è incapsulato in InputReader,
+     * che viene creato e chiuso in main() tramite try-with-resources.
+     * Questo metodo si limita a leggere input e delegare ai metodi privati.
      *
      * Il flag "running" controlla il ciclo: quando l'utente preme 0, diventa
      * false e il while termina in modo pulito.
@@ -69,38 +74,45 @@ public class App {
         System.out.println("Benvenuto in libreria da cochy!\n");
         help();
 
-        try (Scanner scanner = new Scanner(System.in)) {
-            boolean running = true;
-            while (running) {
-                // Gestisce EOF (es. input reindirizzato da file o pipe)
-                if (!scanner.hasNextLine()) {
-                    System.out.println("Input terminato. Uscita.");
-                    break;
-                }
+        boolean running = true;
+        while (running) {
+            // Gestisce EOF (es. input reindirizzato da file o pipe)
+            if (!reader.hasNextLine()) {
+                System.out.println("Input terminato. Uscita.");
+                break;
+            }
 
-                String input = scanner.nextLine().trim();
-                if (input.isEmpty()) {
-                    continue; // salta le righe vuote e torna all'inizio del while
-                }
+            // readLine("") non mostra nessun prompt ma applica già trim() internamente,
+            // sostituendo il precedente reader.nextLine().trim() che usava l'API raw.
+            String input = reader.readLine("");
+            if (input.isEmpty()) {
+                continue; // salta le righe vuote e torna all'inizio del while
+            }
 
-                // Prendiamo solo il primo carattere: l'utente può digitare "1 " o "1abc"
-                // e il programma leggerà comunque '1'
-                char carattere = input.charAt(0);
+            // Prendiamo solo il primo carattere: l'utente può digitare "1 " o "1abc"
+            // e il programma leggerà comunque '1'
+            char carattere = input.charAt(0);
 
-                /**
-                 * SWITCH STATEMENT: scelta tra più casi in base al valore di una variabile.
-                 * È più leggibile di una lunga catena if/else if quando i casi sono discreti.
-                 * "break" è necessario per uscire dal case: senza di esso Java esegue
-                 * anche tutti i case successivi ("fall-through"), comportamento quasi
-                 * sempre indesiderato.
-                 * Il case "default" gestisce qualsiasi valore non previsto.
-                 */
+            /**
+             * SWITCH STATEMENT: scelta tra più casi in base al valore di una variabile.
+             * È più leggibile di una lunga catena if/else if quando i casi sono discreti.
+             * "break" è necessario per uscire dal case: senza di esso Java esegue
+             * anche tutti i case successivi ("fall-through"), comportamento quasi
+             * sempre indesiderato.
+             * Il case "default" gestisce qualsiasi valore non previsto.
+             *
+             * Il try/catch esterno gestisce IllegalStateException: viene lanciata da
+             * readInt() quando l'input finisce (EOF) mentre si aspetta un numero.
+             * Centralizzare qui la gestione evita di dover aggiungere il catch in ogni
+             * metodo che chiama readInt().
+             */
+            try {
                 switch (carattere) {
                     case '1':
-                        addUser(scanner);
+                        addUser();
                         break;
                     case '2':
-                        addBook(scanner);
+                        addBook();
                         break;
                     case '3':
                         printUsers();
@@ -109,10 +121,10 @@ public class App {
                         printBooks();
                         break;
                     case '5':
-                        printUser(scanner);
+                        printUser();
                         break;
                     // case '6':
-                    // removeUser(scanner);
+                    // removeUser();
                     // break;
                     // case '7':
                     // break;
@@ -127,6 +139,9 @@ public class App {
                         System.out.println("Scelta non valida!");
                         break;
                 }
+            } catch (IllegalStateException e) {
+                System.out.println("Input terminato. Uscita.");
+                running = false;
             }
         }
     }
@@ -171,17 +186,14 @@ public class App {
      * Grazie a questa separazione, la UI non conosce le regole di business:
      * sa solo che se riceve un'eccezione deve mostrare il messaggio di errore.
      */
-    private void addUser(Scanner scanner) {
+    private void addUser() {
         System.out.println("\nInserimento utente");
 
-        System.out.print("Nome: ");
-        String name = scanner.nextLine().trim();
+        String name = reader.readLine("Nome: ");
 
-        System.out.print("Cognome: ");
-        String surname = scanner.nextLine().trim();
+        String surname = reader.readLine("Cognome: ");
 
-        System.out.print("Email: ");
-        String email = scanner.nextLine().trim();
+        String email = reader.readLine("Email: ");
 
         try {
             User user = new User(name, surname, email);
@@ -201,9 +213,8 @@ public class App {
      * - altrimenti esegue il Runnable (stampa "non trovato")
      * È più espressivo di if (optional.isPresent()) { ... } else { ... }
      */
-    private void printUser(Scanner scanner) {
-        System.out.print("Inserisci email: ");
-        String email = scanner.nextLine().trim();
+    private void printUser() {
+        String email = reader.readLine("Inserisci email: ");
         if (email.isEmpty()) {
             System.out.println("Campo email obbligatorio!\n");
             return;
@@ -231,19 +242,16 @@ public class App {
      * Il try/catch intercetta le validazioni fallite lanciate da BookService,
      * mostrando il messaggio di errore senza far crashare il programma.
      */
-    private void addBook(Scanner scanner) {
+    private void addBook() {
         System.out.println("\nInserimento libro");
 
-        System.out.print("Titolo: ");
-        String title = scanner.nextLine().trim();
+        String title = reader.readLine("Titolo: ");
 
-        System.out.print("Autore: ");
-        String author = scanner.nextLine().trim();
+        String author = reader.readLine("Autore: ");
 
-        System.out.print("Genere: ");
-        String genre = scanner.nextLine().trim();
+        String genre = reader.readLine("Genere: ");
 
-        int publicationYear = InputUtils.readInt(scanner, "Anno di pubblicazione: ");
+        int publicationYear = reader.readInt("Anno di pubblicazione: ");
 
         try {
             Book book = new Book(title, author, genre, publicationYear);
